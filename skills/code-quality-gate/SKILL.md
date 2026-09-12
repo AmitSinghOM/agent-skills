@@ -1,11 +1,11 @@
 ---
 name: code-quality-gate
-description: "Use when preparing a pull request and you want a quality read on the diff, wiring a pre-commit hook or CI step that must fail only on NEW issues, triaging analyzer JSON/SARIF findings, or the user mentions code quality, complexity, changed-line gating, baselines, or SARIF. Runs the privacy-first offline analyzer cqa-analyzer (Python, Go, TypeScript/JS, Java, Kotlin, C#, C/C++) and turns findings into a deterministic pass/fail gate scoped to the lines you changed."
+description: "Use when preparing a pull request and you want a quality read on the diff, wiring a pre-commit hook or CI step that must fail only on NEW issues, triaging analyzer JSON/SARIF findings, or the user mentions code quality, complexity, changed-line gating, baselines, or SARIF. Runs the privacy-first offline analyzer cqa-analyzer (Python, Go, TypeScript/JS, Java, Kotlin, C#, C/C++, and an experimental Rust pilot) and turns findings into a deterministic pass/fail gate scoped to the lines you changed."
 license: MIT
 compatibility: Requires python3, git, and cqa-analyzer (pip install cqa-analyzer). No network access needed; the analyzer runs with --offline.
 metadata:
   author: AmitSinghOM
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Code Quality Gate
@@ -48,6 +48,13 @@ static quality gate, not a SAST or APM tool.
   it runs. A green local run predicts a green CI run.
 - **Two machine formats.** `json` for caches and dashboards, `sarif` (2.1.0) for
   code-host annotations on the changed lines. `text` for humans.
+- **Configuration is pinned outside the tree being gated.** A pull request could
+  otherwise edit `.code-quality.toml` to disable a rule or exclude a path and
+  pass the gate. `--config <file>` (use a file the PR cannot touch),
+  `--no-project-config` (defaults only), or `--expect-config-fingerprint <sha256>`
+  (analyzer exits 6 before scanning if the effective config differs) close that
+  hole. Read the fingerprint once from `configuration_fingerprint` in a trusted
+  JSON run and commit it to CI config.
 - **Analysis health.** Every run reports what it could and could not analyze
   (`analysis_health` in JSON). Zero findings with parse failures means the scan was
   blind, not clean — `--strict` turns that into a non-zero exit.
@@ -68,6 +75,10 @@ scripts/run-gate.sh --staged --baseline .code-quality-baseline.json
 
 # Clean repo (no legacy debt): gate every changed-line finding, be strict about scan health
 scripts/run-gate.sh --base origin/main --strict
+
+# CI-hardened: the PR cannot weaken the gate by editing the repo's own config
+scripts/run-gate.sh --base origin/main --baseline .code-quality-baseline.json \
+  --expect-config-fingerprint "$CQA_CONFIG_FINGERPRINT" --strict --format sarif > results.sarif
 ```
 
 | Wrapper flag | Analyzer flags it drives | Meaning |
@@ -79,11 +90,15 @@ scripts/run-gate.sh --base origin/main --strict
 | `--format json\|sarif\|text` | `--output-format` | Machine cache / code-host annotations / human |
 | `--fail-on warning\|error` | `--fail-on` | Severity that fails the gate (default `warning`) |
 | `--strict` | `--strict` | Non-zero exit if any requested analysis could not run |
+| `--config <file>` | `--config` | Use this config; ignore the repo's `.code-quality.toml` |
+| `--no-project-config` | `--no-project-config` | Analyzer defaults only |
+| `--expect-config-fingerprint <sha256>` | `--expect-config-fingerprint` | Exit 6 before scanning if the effective config differs |
 | `--report-only` | (drops `--fail-on`) | Always exit 0. Prints a loud warning. |
 | `CQA_CMD=/abs/path` | — | Pin the analyzer binary; must be absolute (PATH-hijack guard) |
 
-Exit codes: `0` clean, `4` gate failed (the analyzer's own code), `3` wrapper
-configuration error (missing analyzer, bad flag, missing baseline).
+Exit codes: `0` clean · `4` gate failed · `6` config fingerprint mismatch (both
+the analyzer's own) · `2` usage error · `3` environment error (missing analyzer,
+missing baseline) from the wrapper. `--report-only` remaps only `4`; a `6` still fails.
 
 ## Pre-PR Gate Checklist
 
@@ -91,6 +106,7 @@ configuration error (missing analyzer, bad flag, missing baseline).
 Gate Progress:
 - [ ] cqa-analyzer installed (or CQA_CMD set to an absolute path)
 - [ ] Baseline exists (legacy repo) — or repo is clean and no baseline is needed
+- [ ] In CI: config pinned (--expect-config-fingerprint or --config outside the tree)
 - [ ] Ran: scripts/run-gate.sh --base origin/main [--baseline ...]
 - [ ] analysis_health shows 0 parse failures (else the result is not trustworthy)
 - [ ] Reviewed must-fix findings on changed lines
@@ -104,7 +120,9 @@ Gate Progress:
   the commit before it reaches a PR.
 - **GitHub Actions:** run with `--format sarif > results.sarif` and upload with
   `github/codeql-action/upload-sarif` so findings annotate the changed lines.
-  Fetch enough history for the merge-base (`fetch-depth: 0`).
+  Fetch enough history for the merge-base (`fetch-depth: 0`) and pin the config
+  with `--expect-config-fingerprint` from a repository variable, so a PR cannot
+  turn the gate off by editing `.code-quality.toml`.
 - **Agent-driven PR prep:** the agent runs the gate with `--format json`, reads
   the selected findings, and reports the must-fix list to the user before
   opening the PR.
@@ -124,5 +142,7 @@ See `references/output-contracts.md` for the JSON/SARIF field shapes and
   findings with N parse failures means the scan was blind, not clean.
 - You **MUST NOT** feed JSON to a code host expecting inline annotations; hosts
   annotate from SARIF. JSON is for caches and dashboards.
+- You **MUST NOT** run an unpinned gate in CI on a repository where pull requests
+  can edit `.code-quality.toml`; the gate is then advisory, not a gate.
 - You **MUST NOT** claim a scan ran if the analyzer was not found. The wrapper
   exits 3 with an install hint; relay that, never fabricate findings.

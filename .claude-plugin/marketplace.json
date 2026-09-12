@@ -5,8 +5,8 @@
     "url": "https://github.com/AmitSinghOM"
   },
   "metadata": {
-    "description": "Agent Skills by AmitSinghOM — each backed by a runnable tool or a tested behaviour contract.",
-    "version": "1.0.0"
+    "description": "Agent Skills by AmitSinghOM \u2014 each backed by a runnable tool or a tested behaviour contract.",
+    "version": "1.1.0"
   },
   "plugins": [
     {
