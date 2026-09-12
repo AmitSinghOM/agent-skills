@@ -31,7 +31,7 @@ cp -r agent-skills/skills/code-quality-gate ~/.kiro/skills/
 
 | Skill | What it does | Backed by |
 |---|---|---|
-| [`code-quality-gate`](skills/code-quality-gate/SKILL.md) | Deterministic pass/fail gate that fails only on **new** findings on the lines you **changed**. Generates the changed-lines manifest from git that the analyzer deliberately does not, drives the correct baseline/SARIF flags, and refuses to fabricate results if the analyzer is missing. | [`cqa-analyzer`](https://pypi.org/project/cqa-analyzer/) — privacy-first offline static analysis for Python, Go, TypeScript/JS, Java, Kotlin, C#, C/C++; 400 tests, published with attestations |
+| [`code-quality-gate`](skills/code-quality-gate/SKILL.md) | Deterministic pass/fail gate that fails only on **new** findings on the lines you **changed**. Generates the changed-lines manifest from git that the analyzer deliberately does not, drives the correct baseline/SARIF flags, pins the analyzer config so a PR cannot weaken the gate, and refuses to fabricate results if the analyzer is missing. | [`cqa-analyzer`](https://pypi.org/project/cqa-analyzer/) — privacy-first offline static analysis for Python, Go, TypeScript/JS, Java, Kotlin, C#, C/C++ (+ experimental Rust); 600+ tests, published with attestations |
 | [`learning-accelerator`](skills/learning-accelerator/SKILL.md) | Turns "teach me X" into a loop: 80/20 plan, exit-test-gated ladder, free-first verified resources, one-page cheat sheet, one-at-a-time escalating quiz, Feynman teach-back. Never fabricates resources. | Daily use in interview preparation; five behaviour scenarios |
 | [`source-grounded-claims`](skills/source-grounded-claims/SKILL.md) | Every substantive claim gets a calibrated confidence percentage (80% = act on it) and every fact gets a source that was actually opened. Unreachable source → "unverified", never a guess. | Four behaviour scenarios; the standing rule behind every number in this README |
 
@@ -56,9 +56,12 @@ echo $?   # 0 clean · 4 new finding on a changed line · 3 misconfigured
   merging, deleted/binary files excluded), and checks that the plugin manifests
   and this README list exactly the skills that exist.
 - CI runs both on every pull request across Python 3.10–3.13.
-- `code-quality-gate`'s wrapper was verified end-to-end against the real analyzer:
-  baseline write, gate pass (exit 0, valid SARIF 2.1.0), gate fail (exit 4),
-  report-only (exit 0 with warning), staged mode, and all configuration errors.
+- `code-quality-gate`'s wrapper has its own test suite (fake analyzer records argv:
+  usage errors, mutual exclusion, verbatim operand forwarding with no shell
+  interpolation, no operand echo, exit-code passthrough) and was verified
+  end-to-end against the real analyzer: baseline write, gate pass (exit 0, valid
+  SARIF 2.1.0), gate fail (exit 4), config-fingerprint mismatch (exit 6),
+  report-only, staged mode, and every usage error.
 
 ## Layout
 

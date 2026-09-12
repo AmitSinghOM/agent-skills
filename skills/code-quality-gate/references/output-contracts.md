@@ -1,6 +1,6 @@
 # Output contracts — code-quality-gate
 
-Field shapes below were captured from a real `cqa-analyzer` run (2.34.x), not
+Field shapes below were captured from real `cqa-analyzer` runs (2.34–2.44), not
 inferred. The analyzer's own schema is versioned (`schema_version` in JSON);
 check it before depending on a field.
 
@@ -11,7 +11,9 @@ check it before depending on a field.
 | `0` | analyzer | No selected finding met `--fail-on`; or `--report-only` |
 | `4` | analyzer | Gate failed: at least one selected finding at or above `--fail-on` |
 | `5` | analyzer | Score not applicable (no signal-capable language analyzed) — only with `--fail-under` |
-| `3` | wrapper | Configuration error: analyzer not found, non-absolute `CQA_CMD`, bad flag, missing baseline |
+| `6` | analyzer | Effective configuration differs from `--expect-config-fingerprint`; nothing was scanned |
+| `2` | wrapper | Usage error: missing value, invalid enum, conflicting selectors, unknown flag |
+| `3` | wrapper | Environment error: analyzer not found, non-absolute `CQA_CMD`, missing baseline file |
 | other non-zero | analyzer | `--strict` violation, invalid manifest, unreadable project |
 
 ## JSON (`--format json`)
@@ -19,9 +21,11 @@ check it before depending on a field.
 Top-level keys (selected):
 
 ```
-schema_version            e.g. "1.11.0"
-analyzer_version          e.g. "2.34.0"
+schema_version            e.g. "1.12.0"
+analyzer_version          e.g. "2.42.0"
 scoring_policy_version    e.g. "2.0.0"  (scores are not comparable across policies)
+configuration_fingerprint SHA-256 of the validated effective config (no paths/source);
+                          the value to pin with --expect-config-fingerprint
 analysis_health           {complete, authoritative, source_candidates, files_read,
                            files_successfully_analyzed, completeness_ratio, reasons[]}
 scan_health               file-discovery health (skips, size limits)
