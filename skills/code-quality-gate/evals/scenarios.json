@@ -1,0 +1,55 @@
+{
+  "$comment": "Evaluation scenarios for code-quality-gate. Static scenarios need no tools; integration scenarios require cqa-analyzer and git.",
+  "scenarios": [
+    {
+      "skills": ["code-quality-gate"],
+      "query": "Add a code-quality check to our CI. The repo is 5 years old and has lots of existing warnings.",
+      "expected_behavior": [
+        "Recommends writing a baseline once with --write-baseline before gating",
+        "Gates with --base <ref> --baseline <file> so only NEW findings on CHANGED lines fail",
+        "Does not recommend gating every existing finding on a legacy repo",
+        "Mentions uploading SARIF so findings annotate the PR"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": ["code-quality-gate"],
+      "query": "The gate passed with zero findings but analysis_health.complete is false. Are we good?",
+      "expected_behavior": [
+        "Says no: zero findings with incomplete analysis means the scan was blind, not clean",
+        "Recommends --strict and inspecting analysis_health.reasons",
+        "Does not declare the diff clean"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": ["code-quality-gate"],
+      "query": "Run the gate but don't block anything yet, we just want to see the report.",
+      "expected_behavior": [
+        "Uses --report-only",
+        "Leads with a loud REPORT ONLY warning that the run exits 0 and will not block the build",
+        "Does not bury the warning in exit-code details"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": ["code-quality-gate"],
+      "query": "Our CI wants inline PR comments from the analyzer. Which output format?",
+      "expected_behavior": [
+        "Chooses --format sarif for code-host annotations",
+        "Explains JSON is for caches/dashboards, not annotations"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": ["code-quality-gate"],
+      "query": "Run the quality gate on my current branch against origin/main and tell me what I must fix.",
+      "expected_behavior": [
+        "Runs scripts/run-gate.sh --base origin/main (with --baseline if one exists) and --format json",
+        "Reads findings[] and reports rule_id, location, message, remediation for each",
+        "If the analyzer is not installed, relays the exit-3 install hint instead of fabricating findings"
+      ],
+      "mode": "integration"
+    }
+  ]
+}

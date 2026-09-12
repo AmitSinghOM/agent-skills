@@ -1,0 +1,67 @@
+{
+  "$comment": "Evaluation scenarios for learning-accelerator. Format follows Anthropic's Agent Skills best-practices. All scenarios are static: the skill is pure reasoning and needs no tools.",
+  "scenarios": [
+    {
+      "skills": [
+        "learning-accelerator"
+      ],
+      "query": "I need to learn Kafka quickly, I have about 20 hours.",
+      "expected_behavior": [
+        "Runs PLAN mode: identifies the ~20% core concepts and names what is EXCLUDED and why",
+        "Produces 10 sessions of ~2h, each with an objective, a concrete deliverable, and a closed-book review slot",
+        "Names a resource per session; does not invent titles or links",
+        "Does not answer with a one-shot explanation of Kafka"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": [
+        "learning-accelerator"
+      ],
+      "query": "Quiz me on dynamic programming.",
+      "expected_behavior": [
+        "Asks exactly ONE question and waits; does not list all 10 at once",
+        "States that questions escalate in difficulty",
+        "Prepares to grade correct/partial/wrong, explain the mistake mechanism, and adapt the next question",
+        "Mentions logging misses for spaced retest"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": [
+        "learning-accelerator"
+      ],
+      "query": "Give me a roadmap for system design from beginner to advanced.",
+      "expected_behavior": [
+        "Runs LADDER mode with exactly 5 levels",
+        "Each level has an observable, testable milestone (not 'understands X')",
+        "Each level has an exit test and promotion is gated on passing it, not on time"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": [
+        "learning-accelerator"
+      ],
+      "query": "What should I read to learn Postgres internals? Free stuff preferred.",
+      "expected_behavior": [
+        "Runs RESOURCES mode: at most 5 resources, each with a one-line justification and what to skip inside it",
+        "Prefers free resources",
+        "States that links were verified or flags any it could not verify; never fabricates a title"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": [
+        "learning-accelerator"
+      ],
+      "query": "I think I get consistent hashing now. Do I really understand it?",
+      "expected_behavior": [
+        "Runs FEYNMAN mode: gives a jargon-free explanation, then asks the user to explain it back",
+        "Diagnoses gaps in the user's version (missing mechanism, wrong causality, memorised phrase)",
+        "Reteaches only the weak points and repeats until the explanation stands alone"
+      ],
+      "mode": "static"
+    }
+  ]
+}

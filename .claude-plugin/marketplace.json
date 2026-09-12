@@ -1,0 +1,24 @@
+{
+  "name": "amitsinghom-agent-skills",
+  "owner": {
+    "name": "Amit Singh",
+    "url": "https://github.com/AmitSinghOM"
+  },
+  "metadata": {
+    "description": "Agent Skills by AmitSinghOM — each backed by a runnable tool or a tested behaviour contract.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "agent-skills",
+      "description": "code-quality-gate (changed-line gate on cqa-analyzer), learning-accelerator (structured learning loop), source-grounded-claims (calibrated confidence + real citations).",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/code-quality-gate",
+        "./skills/learning-accelerator",
+        "./skills/source-grounded-claims"
+      ]
+    }
+  ]
+}

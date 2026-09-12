@@ -1,0 +1,22 @@
+{
+  "name": "amitsinghom-agent-skills",
+  "description": "Three tested Agent Skills: a changed-line code-quality gate backed by cqa-analyzer, a structured learning loop, and calibrated source-grounded claims.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Amit Singh",
+    "url": "https://amitsinghom.github.io/"
+  },
+  "homepage": "https://github.com/AmitSinghOM/agent-skills",
+  "repository": "https://github.com/AmitSinghOM/agent-skills",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "code-quality",
+    "sarif",
+    "ci",
+    "learning",
+    "interview-prep",
+    "citations",
+    "verification"
+  ]
+}

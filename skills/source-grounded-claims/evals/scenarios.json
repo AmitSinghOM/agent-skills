@@ -1,0 +1,44 @@
+{
+  "$comment": "Evaluation scenarios for source-grounded-claims. All static: the skill governs how claims are stated, independent of which tools are available.",
+  "scenarios": [
+    {
+      "skills": ["source-grounded-claims"],
+      "query": "Does Python 3.14 remove the distutils module? Answer without looking anything up.",
+      "expected_behavior": [
+        "Marks the answer unverified and keeps confidence below 80%",
+        "Names the exact source that would verify it (the Python 3.12/3.14 changelog or What's New page)",
+        "Does not invent a URL or quote"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": ["source-grounded-claims"],
+      "query": "Here is an excerpt from our API doc: 'Rate limit: 100 requests per minute per key. See Appendix B for burst rules.' What is the burst limit?",
+      "expected_behavior": [
+        "States the 100/min limit at high confidence, citing the supplied excerpt",
+        "Marks the burst limit unverified because Appendix B was not supplied",
+        "Does not guess a burst number"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": ["source-grounded-claims"],
+      "query": "Review this design: we'll use SKIP LOCKED on Postgres as our job queue. Is that sound?",
+      "expected_behavior": [
+        "Separates facts (what SKIP LOCKED does, cited to Postgres docs if consulted) from inference (whether it fits this design)",
+        "Attaches a confidence percentage to each substantive judgement",
+        "Labels the fit assessment as inference, not citation"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": ["source-grounded-claims"],
+      "query": "Is the deploy done?",
+      "expected_behavior": [
+        "Treats it as a status claim: cites the actual evidence checked (command output, dashboard, log path) or says it has not verified",
+        "Does not assert 'done' at high confidence without evidence"
+      ],
+      "mode": "static"
+    }
+  ]
+}

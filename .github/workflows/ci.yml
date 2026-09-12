@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Validate skills against the Agent Skills spec
+        run: python3 scripts/validate.py
+      - name: Run repository contract tests
+        run: python3 -m unittest discover -s tests -v
+
+  gate-smoke:
+    # Exercise code-quality-gate's wrapper against the real analyzer on this repo.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 -m pip install --quiet cqa-analyzer
+      - name: Manifest generator produces valid schema from a real diff
+        run: |
+          python3 skills/code-quality-gate/scripts/changed_lines_manifest.py --base "${{ github.event.pull_request.base.sha || 'HEAD~1' }}" -o /tmp/m.json
+          python3 -c "import json; d=json.load(open('/tmp/m.json')); assert d['schema_version']=='1.0.0'; print(len(d['files']),'files')"
+      - name: Wrapper runs report-only against the analyzer
+        run: skills/code-quality-gate/scripts/run-gate.sh --base "${{ github.event.pull_request.base.sha || 'HEAD~1' }}" --report-only --format json > /tmp/out.json
+      - name: Output is well-formed JSON with analysis_health
+        run: python3 -c "import json; d=json.load(open('/tmp/out.json')); print('analysis_health:', d['analysis_health'])"
