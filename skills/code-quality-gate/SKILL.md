@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires python3, git, and cqa-analyzer (pip install cqa-analyzer). No network access needed; the analyzer runs with --offline.
 metadata:
   author: AmitSinghOM
-  version: "1.1.0"
+  version: "1.1.1"
 ---
 
 # Code Quality Gate

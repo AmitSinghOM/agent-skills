@@ -26,6 +26,11 @@ Schema version `1.0.0`, as documented by the analyzer
   deletions (`count == 0`) and deleted files contribute nothing — there is no
   current line for a finding to land on.
 - Binary files are skipped.
+- **No comparable base → everything is changed.** If `--base` does not resolve
+  to a commit (single-commit repo with `HEAD~1`, shallow clone without the ref)
+  or shares no merge-base with HEAD, the generator diffs the empty tree against
+  HEAD and prints a `note:` on stderr. Every tracked line is then in scope. This
+  is deliberate: an unresolvable base must never silently gate zero lines.
 - Overlapping or adjacent ranges are merged; files are sorted; output is
   deterministic for a given diff.
 - Paths are repo-relative POSIX (`b/` prefix stripped), which is the identity the
