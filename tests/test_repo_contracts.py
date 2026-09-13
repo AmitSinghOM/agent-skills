@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -135,6 +136,41 @@ diff --git a/src/b.py b/src/b.py
 
     def test_merge_ranges(self):
         self.assertEqual(clm.merge_ranges([(5, 6), (1, 2), (3, 4), (10, 12), (11, 15)]), [(1, 6), (10, 15)])
+
+
+class ChangedLinesManifestGitFallback(unittest.TestCase):
+    """Base refs that cannot be compared must degrade to 'everything changed', not crash."""
+
+    def setUp(self):
+        self.repo = Path(tempfile.mkdtemp())
+        self._git("init", "-q", "-b", "main")
+        (self.repo / "a.py").write_text("x = 1\ny = 2\n")
+        self._git("add", "a.py")
+        self._git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "one")
+
+    def _git(self, *a):
+        subprocess.run(["git", "-C", str(self.repo), *a], check=True, capture_output=True)
+
+    def _files(self, base: str):
+        return clm.parse_diff(clm.git_diff(self.repo, base, staged=False))
+
+    def test_single_commit_repo_head_tilde_falls_back_to_all_lines(self):
+        self.assertEqual(self._files("HEAD~1"), {"a.py": [(1, 2)]})
+
+    def test_nonexistent_ref_falls_back(self):
+        self.assertEqual(self._files("origin/does-not-exist"), {"a.py": [(1, 2)]})
+
+    def test_real_base_uses_merge_base_semantics(self):
+        (self.repo / "a.py").write_text("x = 1\ny = 2\nz = 3\n")
+        self._git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "two")
+        self.assertEqual(self._files("HEAD~1"), {"a.py": [(3, 3)]})
+
+    def test_fallback_is_announced_on_stderr(self):
+        r = subprocess.run([sys.executable, str(GEN), "--base", "HEAD~1", "--repo", str(self.repo)],
+                           capture_output=True, text=True)
+        self.assertEqual(0, r.returncode, r.stderr)
+        self.assertIn("treating every tracked line as changed", r.stderr)
+        self.assertEqual(json.loads(r.stdout)["files"][0]["path"], "a.py")
 
 
 class PluginManifestsAgreeWithSkills(unittest.TestCase):

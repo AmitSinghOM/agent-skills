@@ -29,6 +29,31 @@ SCHEMA_VERSION = "1.0.0"
 _HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 
 
+def _empty_tree(repo: Path) -> str:
+    """Hash of the empty tree for this repo's object format, written so diff can read it."""
+    out = subprocess.run(["git", "-C", str(repo), "hash-object", "-t", "tree", "-w", "--stdin"],
+                         input="", capture_output=True, text=True, check=True)
+    return out.stdout.strip()
+
+
+def _resolve_base(repo: Path, base: str) -> tuple[str, bool]:
+    """Return (diff_spec, fell_back).
+
+    Normal case: ``base`` is a commit sharing history with HEAD -> ``base...HEAD``
+    (merge-base semantics, what a PR shows). If ``base`` does not resolve
+    (single-commit repo and ``HEAD~1``; shallow clone without the ref) or shares
+    no merge-base with HEAD, fall back to diffing the empty tree against HEAD:
+    every tracked line is treated as changed, which is the honest answer for
+    "there is nothing to compare against" and never silently gates zero lines.
+    """
+    def ok(*args: str) -> bool:
+        return subprocess.run(["git", "-C", str(repo), *args], capture_output=True).returncode == 0
+
+    if ok("rev-parse", "--verify", "--quiet", f"{base}^{{commit}}") and ok("merge-base", base, "HEAD"):
+        return f"{base}...HEAD", False
+    return f"{_empty_tree(repo)} HEAD", True
+
+
 def git_diff(repo: Path, base: str | None, staged: bool) -> str:
     """Return a unified diff with zero context lines, new-side only."""
     cmd = ["git", "-C", str(repo), "diff", "--unified=0", "--no-color", "--no-ext-diff",
@@ -36,7 +61,11 @@ def git_diff(repo: Path, base: str | None, staged: bool) -> str:
     if staged:
         cmd.append("--cached")
     elif base:
-        cmd.append(f"{base}...HEAD")
+        spec, fell_back = _resolve_base(repo, base)
+        if fell_back:
+            print(f"note: base {base!r} is not a commit sharing history with HEAD; "
+                  "treating every tracked line as changed", file=sys.stderr)
+        cmd.extend(spec.split())
     else:
         raise SystemExit("error: pass --base <ref> or --staged")
     result = subprocess.run(cmd, check=False, capture_output=True, text=True)
