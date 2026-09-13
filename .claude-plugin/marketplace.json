@@ -6,15 +6,16 @@
   },
   "metadata": {
     "description": "Agent Skills by AmitSinghOM \u2014 each backed by a runnable tool or a tested behaviour contract.",
-    "version": "1.1.1"
+    "version": "1.2.0"
   },
   "plugins": [
     {
       "name": "agent-skills",
-      "description": "code-quality-gate (changed-line gate on cqa-analyzer), learning-accelerator (structured learning loop), source-grounded-claims (calibrated confidence + real citations).",
+      "description": "architecture-baseline (observed architecture snapshot + drift check on cqa-analyzer), code-quality-gate (changed-line gate on cqa-analyzer), learning-accelerator (structured learning loop), source-grounded-claims (calibrated confidence + real citations).",
       "source": "./",
       "strict": false,
       "skills": [
+        "./skills/architecture-baseline",
         "./skills/code-quality-gate",
         "./skills/learning-accelerator",
         "./skills/source-grounded-claims"

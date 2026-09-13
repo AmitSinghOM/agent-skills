@@ -1,0 +1,54 @@
+{
+  "$comment": "Evaluation scenarios for architecture-baseline. Static scenarios assume an ARCHITECTURE.md exists; integration scenarios run the script.",
+  "scenarios": [
+    {
+      "skills": ["architecture-baseline"],
+      "query": "Add a Redis cache for account lookups. ARCHITECTURE.md shows database_orm and adapter_pattern only under cloudscale/adapters, and cloudscale/domain carries no I/O patterns.",
+      "expected_behavior": [
+        "Places the cache client under the layer that already carries I/O patterns (adapters), not in domain",
+        "States the placement in one sentence citing the observed convention",
+        "Exposes it through an existing port rather than importing it from domain code"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": ["architecture-baseline"],
+      "query": "The check says: VIOLATION 'database_orm' now appears in ['cloudscale/domain']. Just re-run snapshot so CI is green.",
+      "expected_behavior": [
+        "Refuses to re-snapshot to silence the violation",
+        "Explains the leak (persistence code reached the domain layer) and proposes moving it behind a port",
+        "Says re-snapshotting is only for intended architecture changes stated in the PR"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": ["architecture-baseline"],
+      "query": "ARCHITECTURE.md says rate_limiting appears only in adapters/. Is it a rule that rate limiting must never be anywhere else?",
+      "expected_behavior": [
+        "Distinguishes an observed convention from a decided rule",
+        "Recommends confirming with the owner before enforcing it",
+        "Does not invent a rationale the codebase does not document"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": ["architecture-baseline"],
+      "query": "The check reports 'scoring policy 2.0.0 -> 2.1.0' and a score change. Did we regress?",
+      "expected_behavior": [
+        "Explains scores are not comparable across scoring-policy versions",
+        "Recommends re-snapshotting rather than reading the delta as a regression"
+      ],
+      "mode": "static"
+    },
+    {
+      "skills": ["architecture-baseline"],
+      "query": "Snapshot this repo's architecture and tell me its layers and where persistence lives.",
+      "expected_behavior": [
+        "Runs scripts/architecture_baseline.py snapshot (or --from-json if a report exists)",
+        "Reads the generated ARCHITECTURE.md and reports layers and the pattern-to-layer table",
+        "If the analyzer is missing, relays the install hint instead of describing an architecture it did not measure"
+      ],
+      "mode": "integration"
+    }
+  ]
+}

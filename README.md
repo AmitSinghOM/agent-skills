@@ -1,6 +1,6 @@
 # agent-skills
 
-Three [Agent Skills](https://agentskills.io) for coding agents (Claude Code,
+Four [Agent Skills](https://agentskills.io) for coding agents (Claude Code,
 Kiro, Codex, Cursor, and anything else that loads `SKILL.md`). Each one is
 backed by a runnable tool or a tested behaviour contract — no skill here is
 just a prompt with a nice name.
@@ -31,6 +31,7 @@ cp -r agent-skills/skills/code-quality-gate ~/.kiro/skills/
 
 | Skill | What it does | Backed by |
 |---|---|---|
+| [`architecture-baseline`](skills/architecture-baseline/SKILL.md) | Captures a codebase's **observed** architecture from the analyzer's pattern map — which layers carry `database_orm`, `event_sourcing_cqrs`, `rate_limiting`… — into `ARCHITECTURE.md` + a snapshot, guides new code into the right layer, and fails CI when a pattern leaks into a layer it never lived in or the score regresses. Re-snapshot only on intended change. | [`cqa-analyzer`](https://pypi.org/project/cqa-analyzer/) pattern map; verified on a real hexagonal codebase (21 patterns, 17 layers, synthetic domain-leak caught with exit 4) |
 | [`code-quality-gate`](skills/code-quality-gate/SKILL.md) | Deterministic pass/fail gate that fails only on **new** findings on the lines you **changed**. Generates the changed-lines manifest from git that the analyzer deliberately does not, drives the correct baseline/SARIF flags, pins the analyzer config so a PR cannot weaken the gate, and refuses to fabricate results if the analyzer is missing. | [`cqa-analyzer`](https://pypi.org/project/cqa-analyzer/) — privacy-first offline static analysis for Python, Go, TypeScript/JS, Java, Kotlin, C#, C/C++ (+ experimental Rust); 600+ tests, published with attestations |
 | [`learning-accelerator`](skills/learning-accelerator/SKILL.md) | Turns "teach me X" into a loop: 80/20 plan, exit-test-gated ladder, free-first verified resources, one-page cheat sheet, one-at-a-time escalating quiz, Feynman teach-back. Never fabricates resources. | Daily use in interview preparation; five behaviour scenarios |
 | [`source-grounded-claims`](skills/source-grounded-claims/SKILL.md) | Every substantive claim gets a calibrated confidence percentage (80% = act on it) and every fact gets a source that was actually opened. Unreachable source → "unverified", never a guess. | Four behaviour scenarios; the standing rule behind every number in this README |
@@ -55,6 +56,7 @@ echo $?   # 0 clean · 4 new finding on a changed line · 3 misconfigured
   the changed-lines manifest generator (new-side-only hunks, adjacent-range
   merging, deleted/binary files excluded), and checks that the plugin manifests
   and this README list exactly the skills that exist.
+- `architecture-baseline` has unit tests for layer grouping, drift rules, markdown-marker preservation and exit codes, with no analyzer required.
 - CI runs both on every pull request across Python 3.10–3.13.
 - `code-quality-gate`'s wrapper has its own test suite (fake analyzer records argv:
   usage errors, mutual exclusion, verbatim operand forwarding with no shell
