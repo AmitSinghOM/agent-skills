@@ -27,9 +27,9 @@ class ShippedSkillsAreValid(unittest.TestCase):
             with self.subTest(skill=d.name):
                 self.assertEqual(validate.validate_skill(d), [])
 
-    def test_three_skills_shipped(self):
+    def test_four_skills_shipped(self):
         self.assertEqual([d.name for d in SKILL_DIRS],
-                         ["code-quality-gate", "learning-accelerator", "source-grounded-claims"])
+                         ["architecture-baseline", "code-quality-gate", "learning-accelerator", "source-grounded-claims"])
 
 
 class ValidatorRejectsBadSkills(unittest.TestCase):
