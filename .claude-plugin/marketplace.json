@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Agent Skills by AmitSinghOM \u2014 each backed by a runnable tool or a tested behaviour contract.",
-    "version": "1.2.0"
+    "version": "1.3.0"
   },
   "plugins": [
     {

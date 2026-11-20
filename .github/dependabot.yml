@@ -1,0 +1,9 @@
+# The scripts are standard-library only; the one supply-chain surface is the
+# GitHub Actions used in CI. Keep them current.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels: [maintenance]

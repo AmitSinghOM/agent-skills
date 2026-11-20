@@ -94,11 +94,17 @@ fi
 # --- gate mode -------------------------------------------------------------
 MANIFEST="$(mktemp "${TMPDIR:-/tmp}/cqa-changed-lines.XXXXXX")"
 trap 'rm -f "$MANIFEST"' EXIT
+# `--opt=value` keeps a value such as "-x" from being parsed as an option.
+# --base compares merge-base..WORKING TREE (what is scanned); --staged refuses
+# unstaged tracked edits. Deletions are anchored so a removed guard is gated.
 if [[ "$STAGED" -eq 1 ]]; then
-  python3 "$HERE/changed_lines_manifest.py" --staged --repo "$PROJECT" --output "$MANIFEST"
+  selector=(--staged)
 else
-  python3 "$HERE/changed_lines_manifest.py" --base "$BASE" --repo "$PROJECT" --output "$MANIFEST"
+  selector=("--base=$BASE")
 fi
+python3 "$HERE/changed_lines_manifest.py" "${selector[@]}" --include-deletions \
+    "--repo=$PROJECT" "--output=$MANIFEST" \
+  || die "could not build the changed-lines manifest (see the error above); refusing to gate on an unknown diff"
 args+=(--changed-lines-manifest "$MANIFEST")
 
 if [[ -n "$BASELINE" ]]; then

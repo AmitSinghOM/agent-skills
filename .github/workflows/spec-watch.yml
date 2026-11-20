@@ -1,0 +1,45 @@
+name: spec-watch
+
+# The skills follow the Agent Skills specification. If its source changes, a
+# maintainer must review it against scripts/validate.py. This job compares the
+# spec's source file hash with docs/spec.sha256 weekly and opens an issue on drift.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"   # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch spec source and compare
+        id: cmp
+        run: |
+          curl -sSf -o spec.mdx https://raw.githubusercontent.com/agentskills/agentskills/main/docs/specification.mdx
+          expected="$(grep -v '^#' docs/spec.sha256 | tr -d '[:space:]')"
+          actual="$(sha256sum spec.mdx | cut -d' ' -f1)"
+          echo "expected=$expected" >> "$GITHUB_OUTPUT"
+          echo "actual=$actual" >> "$GITHUB_OUTPUT"
+          if [ "$expected" = "$actual" ]; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Open or update drift issue
+        if: steps.cmp.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Agent Skills spec changed upstream — review validator"
+          body="The specification source at https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx no longer matches docs/spec.sha256.
+
+          expected: ${{ steps.cmp.outputs.expected }}
+          actual:   ${{ steps.cmp.outputs.actual }}
+
+          Review the diff, update scripts/validate.py if a rule changed, re-run the suite, then update docs/spec.sha256 in the same PR."
+          existing="$(gh issue list --state open --search "in:title \"$title\"" --json number -q '.[0].number')"
+          if [ -n "$existing" ]; then gh issue comment "$existing" --body "Still drifted as of $(date -u +%F): actual ${{ steps.cmp.outputs.actual }}"; else gh issue create --title "$title" --body "$body" --label maintenance; fi
+      - name: Result
+        run: echo "spec changed=${{ steps.cmp.outputs.changed }}"

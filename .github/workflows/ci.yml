@@ -24,6 +24,9 @@ jobs:
         run: python3 scripts/validate.py
       - name: Run repository contract tests
         run: python3 -m unittest discover -s tests -v
+      - name: EVIDENCE.json must match validated inputs
+        if: matrix.python-version == '3.12'
+        run: python3 scripts/evidence.py --check
 
   gate-smoke:
     # Exercise code-quality-gate's wrapper against the real analyzer on this repo.
@@ -35,12 +38,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python3 -m pip install --quiet cqa-analyzer
+      - run: python3 -P -m pip install --quiet cqa-analyzer==3.4.1
       - name: Manifest generator produces valid schema from a real diff
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || 'HEAD~1' }}
         run: |
-          python3 skills/code-quality-gate/scripts/changed_lines_manifest.py --base "${{ github.event.pull_request.base.sha || 'HEAD~1' }}" -o /tmp/m.json
-          python3 -c "import json; d=json.load(open('/tmp/m.json')); assert d['schema_version']=='1.0.0'; print(len(d['files']),'files')"
+          python3 skills/code-quality-gate/scripts/changed_lines_manifest.py --base "$BASE_REF" -o "$RUNNER_TEMP/cqa-manifest.json"
+          python3 -P -c "import json,sys; d=json.load(open(sys.argv[1])); assert d['schema_version']=='1.0.0'; print(len(d['files']),'files')" "$RUNNER_TEMP/cqa-manifest.json"
       - name: Wrapper runs report-only against the analyzer
-        run: skills/code-quality-gate/scripts/run-gate.sh --base "${{ github.event.pull_request.base.sha || 'HEAD~1' }}" --report-only --format json > /tmp/out.json
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || 'HEAD~1' }}
+        run: skills/code-quality-gate/scripts/run-gate.sh --base "$BASE_REF" --report-only --format json > "$RUNNER_TEMP/cqa-report.json"
       - name: Output is well-formed JSON with analysis_health
-        run: python3 -c "import json; d=json.load(open('/tmp/out.json')); print('analysis_health:', d['analysis_health'])"
+        run: |
+          python3 -P -c "import json,sys; d=json.load(open(sys.argv[1])); print('analysis_health:', d['analysis_health'])" "$RUNNER_TEMP/cqa-report.json"

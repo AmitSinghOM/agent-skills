@@ -191,5 +191,43 @@ class PluginManifestsAgreeWithSkills(unittest.TestCase):
             self.assertIn(f"`{d.name}`", readme)
 
 
+class LongevityContracts(unittest.TestCase):
+    """Enforced parts of docs/LONGEVITY.md."""
+
+    STDLIB = set(sys.stdlib_module_names)
+
+    def test_scripts_import_standard_library_only(self):
+        import re
+        pattern = re.compile(r"^\s*(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))", re.M)
+        for py in list((ROOT / "scripts").glob("*.py")) + list((ROOT / "skills").glob("*/scripts/*.py")):
+            for m in pattern.finditer(py.read_text(encoding="utf-8")):
+                mod = (m.group(1) or m.group(2)).split(".")[0]
+                with self.subTest(file=py.name, module=mod):
+                    self.assertIn(mod, self.STDLIB | {"__future__"}, f"{py}: non-stdlib import {mod}")
+
+    def test_every_skill_has_semver_metadata_version_recorded_in_changelog(self):
+        import re
+        changelog = (ROOT / "CHANGELOG.md").read_text()
+        plugin = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text())
+        self.assertIn(f"## [{plugin['version']}]", changelog, "plugin version must have a changelog entry")
+        for d in SKILL_DIRS:
+            fm = (d / "SKILL.md").read_text()
+            self.assertRegex(fm, r'\n\s+version:\s*"\d+\.\d+\.\d+"')
+
+    def test_adrs_and_longevity_docs_exist(self):
+        for rel in ("docs/LONGEVITY.md", "docs/MODEL_COMPATIBILITY.md", "docs/spec.sha256",
+                    "docs/adr/0001-tool-backed-stdlib-only.md", "SECURITY.md", "CONTRIBUTING.md", "CHANGELOG.md"):
+            self.assertTrue((ROOT / rel).is_file(), rel)
+        sha = [l for l in (ROOT / "docs/spec.sha256").read_text().splitlines() if l and not l.startswith("#")]
+        self.assertEqual(len(sha), 1); self.assertRegex(sha[0], r"^[0-9a-f]{64}$")
+
+    def test_evidence_entrypoint_is_importable_without_collecting(self):
+        spec = importlib.util.spec_from_file_location("evidence_contract", ROOT / "scripts" / "evidence.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertTrue(callable(module.collect))
+        self.assertTrue(callable(module.main))
+
+
 if __name__ == "__main__":
     unittest.main()
